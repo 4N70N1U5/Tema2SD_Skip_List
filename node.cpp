@@ -108,7 +108,7 @@ void node::propagate_deletion()
         
         curr_node = curr_node->below;
 
-        delete curr_node->above;
+        // delete curr_node->above;
     }
 }
 
@@ -165,7 +165,7 @@ bool node::delete_node(int x)
 
         curr_node->below->propagate_deletion();
 
-        delete curr_node;
+        // delete curr_node;
 
         return true;
     }
