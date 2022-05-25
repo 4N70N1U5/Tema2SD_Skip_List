@@ -12,12 +12,9 @@ class node
 {
 public:
     node();
-    
-    node* get_above();
-    
     node* insert_node(int, bool&);
     void propagate_deletion();
-    bool delete_node(int);
+    bool delete_node(int, bool&);
     void print_list(std::ostream&);
     bool find_value(int);
     node* find_greatest(int);

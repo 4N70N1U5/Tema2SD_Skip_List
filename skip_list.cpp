@@ -67,8 +67,21 @@ void skip_list::insert_node(int value)
 }
 
 bool skip_list::delete_node(int value)
-{    
-    return levels[levels.size() - 1]->delete_node(value);
+{   
+    bool was_first, aux;
+    bool del = levels[levels.size() - 1]->delete_node(value, was_first);
+
+    if (was_first)
+    {
+        while (levels.size() > 1 && levels[levels.size() - 1]->void_list)
+            levels.pop_back();
+
+        for (int i = 0; i < levels.size(); i++)
+            levels[i]->insert_node(levels[0]->value, aux);
+
+    }
+
+    return del;
 }
 
 void skip_list::print_list(std::ostream& out)
@@ -101,7 +114,8 @@ void skip_list::print_interval(std::ostream& out, int x, int y)
     if (start_node->next == nullptr)
         return;
         
-    start_node = start_node->next;
+    if (start_node->value < x)
+        start_node = start_node->next;
     
     while (start_node->below != nullptr)
         start_node = start_node->below;

@@ -7,7 +7,6 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
-#include <vector>
 
 #include "skip_list.hpp"
 

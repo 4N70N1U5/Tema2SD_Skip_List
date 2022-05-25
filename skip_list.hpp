@@ -15,7 +15,6 @@ class skip_list
 {
 public:
     skip_list();
-    
     void insert_node(int);
     bool delete_node(int);
     void print_list(std::ostream&);

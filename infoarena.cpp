@@ -16,7 +16,7 @@ public:
     
     node* insert_node(int, bool&);
     void propagate_deletion();
-    bool delete_node(int);
+    bool delete_node(int, bool&);
     void print_list();
     bool find_value(int);
     node* find_greatest(int);
@@ -106,41 +106,96 @@ void node::propagate_deletion()
 {
     node* curr_node = this;
 
-    while (curr_node != NULL)
+    bool swapped = false;
+
+    if (curr_node != nullptr)
     {
-        if (curr_node->prev == NULL && curr_node->next == NULL)
+        if (curr_node->prev == nullptr && curr_node->next == nullptr)
         {
             void_list = true;
         }
 
-        if (curr_node->prev == NULL && curr_node->next != NULL)
+        if (curr_node->prev == nullptr && curr_node->next != nullptr)
         {
             std::swap(curr_node->value, curr_node->next->value);
             curr_node = curr_node->next;
+            swapped = true;
         }
 
-        if (curr_node->prev != NULL && curr_node->next == NULL)
+        if (curr_node->prev != nullptr && curr_node->next == nullptr)
         {
-            curr_node->prev->next = NULL;
+            curr_node->prev->next = nullptr;
         }
 
-        if (curr_node->prev != NULL && curr_node->next != NULL)
+        if (curr_node->prev != nullptr && curr_node->next != nullptr)
         {
             curr_node->prev->next = curr_node->next;
             curr_node->next->prev = curr_node->prev;
         }
-        
-        curr_node = curr_node->below;
 
-        // delete curr_node->above;
+        if (swapped)
+        {
+            if (curr_node->prev->below != nullptr)
+                curr_node->prev->below->propagate_deletion();
+        }
+        else 
+        {
+            if (curr_node->below != nullptr)
+                curr_node->below->propagate_deletion();
+        }
+        
+        if (!void_list)
+            delete curr_node;
     }
 }
 
-bool node::delete_node(int x)
+bool node::delete_node(int x, bool& was_first)
 {
+    was_first = false;
+
     node* curr_node = this;
-    
-    while (curr_node->next != NULL)
+
+    if (curr_node->value == x)
+    {
+        bool swapped = false;
+
+        was_first = true;
+        
+        if (curr_node->next == nullptr)
+            void_list = true;
+
+        if (curr_node->next != nullptr)
+        {
+            swapped = true;
+
+            std::swap(curr_node->value, curr_node->next->value);
+
+            curr_node = curr_node->next;
+
+            curr_node->prev->next = curr_node->next;
+
+            if (curr_node->next != nullptr)
+                curr_node->next->prev = curr_node->prev;
+        }
+
+        if (swapped)
+        {
+            if (curr_node->prev->below != nullptr)
+                curr_node->prev->below->propagate_deletion();
+        }
+        else
+        {
+            if (curr_node->below != nullptr)
+                curr_node->below->propagate_deletion();
+        }
+
+        if (!void_list)
+            delete curr_node;
+
+        return true;
+    }
+
+    while (curr_node->next != nullptr)
         if (curr_node->next->value < x)
             curr_node = curr_node->next;
         else
@@ -148,48 +203,32 @@ bool node::delete_node(int x)
 
     bool go_down = false;
     
-    if (curr_node->next == NULL)
+    if (curr_node->next == nullptr)
         go_down = true;
     else if (curr_node->next->value > x)
         go_down = true;
     
     if (curr_node->value < x && go_down)
     {
-        if (curr_node->below != NULL)
-            return curr_node->below->delete_node(x);
+        if (curr_node->below != nullptr)
+            return curr_node->below->delete_node(x, was_first);
         else
             return false;
     }
-    
+
     if (curr_node->next->value == x)
     {
         curr_node = curr_node->next;
-        
-        if (curr_node->prev == NULL && curr_node->next == NULL)
-        {
-            void_list = true;
-        }
 
-        if (curr_node->prev == NULL && curr_node->next != NULL)
-        {
-            std::swap(curr_node->value, curr_node->next->value);
-            curr_node = curr_node->next;
-        }
+        curr_node->prev->next = curr_node->next;
 
-        if (curr_node->prev != NULL && curr_node->next == NULL)
-        {
-            curr_node->prev->next = NULL;
-        }
-
-        if (curr_node->prev != NULL && curr_node->next != NULL)
-        {
-            curr_node->prev->next = curr_node->next;
+        if (curr_node->next != nullptr)
             curr_node->next->prev = curr_node->prev;
-        }
 
-        curr_node->below->propagate_deletion();
+        if (curr_node->below != nullptr)
+            curr_node->below->propagate_deletion();
 
-        // delete curr_node;
+        delete curr_node;
 
         return true;
     }
@@ -239,7 +278,7 @@ node* node::find_greatest(int x)
         return curr_node;
 
     while (curr_node->next != NULL)
-        if (curr_node->next->value < x)
+        if (curr_node->next->value <= x)
             curr_node = curr_node->next;
         else
             break;
@@ -387,8 +426,21 @@ void skip_list::insert_node(int value)
 }
 
 bool skip_list::delete_node(int value)
-{
-    return levels[levels.size() - 1]->delete_node(value);
+{   
+    bool was_first, aux;
+    bool del = levels[levels.size() - 1]->delete_node(value, was_first);
+
+    if (was_first)
+    {
+        while (levels.size() > 1 && levels[levels.size() - 1]->void_list)
+            levels.pop_back();
+
+        for (int i = 0; i < levels.size(); i++)
+            levels[i]->insert_node(levels[0]->value, aux);
+
+    }
+
+    return del;
 }
 
 void skip_list::print_list()
@@ -421,7 +473,8 @@ void skip_list::print_interval(int x, int y)
     if (start_node->next == NULL)
         return;
         
-    start_node = start_node->next;
+    if (start_node->value < x)
+        start_node = start_node->next;
     
     while (start_node->below != NULL)
         start_node = start_node->below;

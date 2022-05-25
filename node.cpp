@@ -6,7 +6,6 @@
 #include "node.hpp"
 
 #include <iostream>
-#include <utility>
 
 node::node()
 {
@@ -82,7 +81,9 @@ void node::propagate_deletion()
 {
     node* curr_node = this;
 
-    while (curr_node != nullptr)
+    bool swapped = false;
+
+    if (curr_node != nullptr)
     {
         if (curr_node->prev == nullptr && curr_node->next == nullptr)
         {
@@ -93,6 +94,7 @@ void node::propagate_deletion()
         {
             std::swap(curr_node->value, curr_node->next->value);
             curr_node = curr_node->next;
+            swapped = true;
         }
 
         if (curr_node->prev != nullptr && curr_node->next == nullptr)
@@ -105,16 +107,68 @@ void node::propagate_deletion()
             curr_node->prev->next = curr_node->next;
             curr_node->next->prev = curr_node->prev;
         }
-        
-        curr_node = curr_node->below;
 
-        // delete curr_node->above;
+        if (swapped)
+        {
+            if (curr_node->prev->below != nullptr)
+                curr_node->prev->below->propagate_deletion();
+        }
+        else 
+        {
+            if (curr_node->below != nullptr)
+                curr_node->below->propagate_deletion();
+        }
+        
+        if (!void_list)
+            delete curr_node;
     }
 }
 
-bool node::delete_node(int x)
+bool node::delete_node(int x, bool& was_first)
 {
+    was_first = false;
+
     node* curr_node = this;
+
+    if (curr_node->value == x)
+    {
+        bool swapped = false;
+
+        was_first = true;
+        
+        if (curr_node->next == nullptr)
+            void_list = true;
+
+        if (curr_node->next != nullptr)
+        {
+            swapped = true;
+
+            std::swap(curr_node->value, curr_node->next->value);
+
+            curr_node = curr_node->next;
+
+            curr_node->prev->next = curr_node->next;
+
+            if (curr_node->next != nullptr)
+                curr_node->next->prev = curr_node->prev;
+        }
+
+        if (swapped)
+        {
+            if (curr_node->prev->below != nullptr)
+                curr_node->prev->below->propagate_deletion();
+        }
+        else
+        {
+            if (curr_node->below != nullptr)
+                curr_node->below->propagate_deletion();
+        }
+
+        if (!void_list)
+            delete curr_node;
+
+        return true;
+    }
 
     while (curr_node->next != nullptr)
         if (curr_node->next->value < x)
@@ -132,40 +186,24 @@ bool node::delete_node(int x)
     if (curr_node->value < x && go_down)
     {
         if (curr_node->below != nullptr)
-            return curr_node->below->delete_node(x);
+            return curr_node->below->delete_node(x, was_first);
         else
             return false;
     }
-    
+
     if (curr_node->next->value == x)
     {
         curr_node = curr_node->next;
-        
-        if (curr_node->prev == nullptr && curr_node->next == nullptr)
-        {
-            void_list = true;
-        }
 
-        if (curr_node->prev == nullptr && curr_node->next != nullptr)
-        {
-            std::swap(curr_node->value, curr_node->next->value);
-            curr_node = curr_node->next;
-        }
+        curr_node->prev->next = curr_node->next;
 
-        if (curr_node->prev != nullptr && curr_node->next == nullptr)
-        {
-            curr_node->prev->next = nullptr;
-        }
-
-        if (curr_node->prev != nullptr && curr_node->next != nullptr)
-        {
-            curr_node->prev->next = curr_node->next;
+        if (curr_node->next != nullptr)
             curr_node->next->prev = curr_node->prev;
-        }
 
-        curr_node->below->propagate_deletion();
+        if (curr_node->below != nullptr)
+            curr_node->below->propagate_deletion();
 
-        // delete curr_node;
+        delete curr_node;
 
         return true;
     }
@@ -215,7 +253,7 @@ node* node::find_greatest(int x)
         return curr_node;
 
     while (curr_node->next != nullptr)
-        if (curr_node->next->value < x)
+        if (curr_node->next->value <= x)
             curr_node = curr_node->next;
         else
             break;
